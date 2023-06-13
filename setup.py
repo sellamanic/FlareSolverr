@@ -33,6 +33,7 @@ description = (
 setup(
     name="undetected-chromedriver",
     version=version,
+    packages=["undetected_chromedriver"],
     install_requires=deps,
     py_modules=['utils'],
     url="https://github.com/sellamanic/FlareSolverr",
