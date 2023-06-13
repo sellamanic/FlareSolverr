@@ -8,7 +8,7 @@ from setuptools import setup
 dirname = os.path.abspath(os.path.dirname(__file__))
 
 deps = Path('requirements.txt').read_text().splitlines()
-deps.append("urllib3==1.25.11")
+# deps.append("urllib3==1.25.11")
 
 path_to_change = os.path.join(dirname, "src")
 
