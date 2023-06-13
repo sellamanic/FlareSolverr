@@ -36,7 +36,7 @@ def get_flaresolverr_version() -> str:
         return FLARESOLVERR_VERSION
 
 
-def get_webdriver(proxy: dict = None) -> WebDriver:
+def get_webdriver(proxy: dict = None, display=True) -> WebDriver:
     global PATCHED_DRIVER_PATH
     logging.debug('Launching web browser...')
 
@@ -68,7 +68,7 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     # note: headless mode is detected (options.headless = True)
     # we launch the browser in head-full mode with the window hidden
     windows_headless = False
-    if get_config_headless():
+    if not display and get_config_headless():
         if os.name == 'nt':
             windows_headless = True
         else:
@@ -91,8 +91,7 @@ def get_webdriver(proxy: dict = None) -> WebDriver:
     # downloads and patches the chromedriver
     # if we don't set driver_executable_path it downloads, patches, and deletes the driver each time
     driver = uc.Chrome(options=options, browser_executable_path=browser_executable_path,
-                       driver_executable_path=driver_exe_path, version_main=version_main,
-                       windows_headless=windows_headless)
+                       driver_executable_path=driver_exe_path, version_main=version_main)
 
     # save the patched driver to avoid re-downloads
     if driver_exe_path is None:
