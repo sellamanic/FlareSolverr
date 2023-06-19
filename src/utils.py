@@ -36,7 +36,7 @@ def get_flaresolverr_version() -> str:
         return FLARESOLVERR_VERSION
 
 
-def get_webdriver(proxy: dict = None, display=True) -> WebDriver:
+def get_webdriver(proxy: dict = None, display=False) -> WebDriver:
     global PATCHED_DRIVER_PATH
     logging.debug('Launching web browser...')
 
