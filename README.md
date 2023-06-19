@@ -87,6 +87,32 @@ This is the recommended way for Windows users.
 
 We provide an example Systemd unit file `flaresolverr.service` as reference. You have to modify the file to suit your needs: paths, user and environment variables.
 
+## client.py Usage
+```python
+# import interface
+from client import *
+
+# create client object
+client = ChromeFlare(session="pastebin") # proxy="http://ip:port"
+
+# launch URL
+client.get(url)
+
+#current_url
+client.current_url
+
+# type in text box
+client.type('[name="LoginForm[username]"]', "macxxxxxx")
+
+# click button 
+client.click('[class="btn -big"]')
+
+# get screenshot
+png = client.as_png()
+
+# get element screenshot
+png = client.element_as_png('[class="form_frame_left"]')
+```
 ## Usage
 
 Example request:
