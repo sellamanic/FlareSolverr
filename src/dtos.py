@@ -37,6 +37,12 @@ class V1RequestBase(object):
     headers: list = None  # deprecated v2.0.0, not used
     userAgent: str = None  # deprecated v2.0.0, not used
 
+    # css path
+    rules: list = None
+    selector: str = None
+    value: str = None
+    operation: str = None
+
     # V1Request
     url: str = None
     postData: str = None
