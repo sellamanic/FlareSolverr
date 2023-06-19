@@ -43,6 +43,8 @@ RUN dpkg -i /libgl1-mesa-dri.deb \
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install pillow
+RUN pip install xvfbwrapper
+
 RUN pip install -r requirements.txt \
     # Remove temporary files
     && rm -rf /root/.cache
