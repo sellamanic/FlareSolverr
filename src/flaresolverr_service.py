@@ -19,6 +19,30 @@ from dtos import (STATUS_ERROR, STATUS_OK, ChallengeResolutionResultT,
                   ChallengeResolutionT, HealthResponse, IndexResponse,
                   V1RequestBase, V1ResponseBase)
 from sessions import SessionsStorage
+from PIL import Image
+from io import BytesIO
+import base64
+
+
+def crop_element(element, client):
+    location = element.location
+    size = element.size
+    png = client.get_screenshot_as_png()
+
+    im = Image.open(BytesIO(png))
+
+    left = location['x']
+    top = location['y']
+    right = location['x'] + size['width']
+    bottom = location['y'] + size['height']
+
+    image_byte_array = BytesIO()
+
+    im = im.crop((left, top, right, bottom))
+    im.save(image_byte_array, format='PNG')
+    return image_byte_array.getvalue()
+
+
 
 ACCESS_DENIED_TITLES = [
     # Cloudflare
@@ -109,6 +133,12 @@ def controller_v1_endpoint(req: V1RequestBase) -> V1ResponseBase:
     return res
 
 
+def perform_operation(data):
+    res = V1ResponseBase({})
+    res.data = data
+    return res
+
+
 def _controller_v1_handler(req: V1RequestBase) -> V1ResponseBase:
     # do some validations
     if req.cmd is None:
@@ -117,6 +147,29 @@ def _controller_v1_handler(req: V1RequestBase) -> V1ResponseBase:
         logging.warning("Request parameter 'headers' was removed in FlareSolverr v2.")
     if req.userAgent is not None:
         logging.warning("Request parameter 'userAgent' was removed in FlareSolverr v2.")
+
+    operation = req.operation
+    if operation and operation in ["text", "current_url", "cookies", "as_png", "element_as_png"]:
+        driver = get_session(req)
+        if operation == "text":
+            return perform_operation(driver.page_source)
+        elif operation == "current_url":
+            return perform_operation(driver.current_url)
+        elif operation == "cookies":
+            return perform_operation(driver.get_cookies())
+        elif operation == "as_png":
+            logging.debug("inside as_png")
+            img = driver.get_screenshot_as_png()
+            return perform_operation(base64.b64encode(img).decode("utf-8"))
+        elif operation == "element_as_png":
+            selector = req.selector
+            logging.debug(f"inside element_as_png {selector}")
+            elem = driver.find_element(By.CSS_SELECTOR, selector)
+            actions = ActionChains(driver)
+            actions.move_to_element(elem).perform()
+            img = crop_element(elem, driver)
+            img_data_base64 = base64.b64encode(img).decode("utf-8")
+            return perform_operation(img_data_base64)
 
     # set default values
     if req.maxTimeout is None or req.maxTimeout < 1:
@@ -161,8 +214,9 @@ def _cmd_request_get(req: V1RequestBase) -> V1ResponseBase:
 
 def _cmd_request_post(req: V1RequestBase) -> V1ResponseBase:
     # do some validations
-    if req.postData is None:
-        raise Exception("Request parameter 'postData' is mandatory in 'request.post' command.")
+
+    # if req.postData is None:
+    #     raise Exception("Request parameter 'postData' is mandatory in 'request.post' command.")
     if req.returnRawHtml is not None:
         logging.warning("Request parameter 'returnRawHtml' was removed in FlareSolverr v2.")
     if req.download is not None:
@@ -173,6 +227,7 @@ def _cmd_request_post(req: V1RequestBase) -> V1ResponseBase:
     res.status = challenge_res.status
     res.message = challenge_res.message
     res.solution = challenge_res.result
+    res.img_data = challenge_res.img_data
     return res
 
 
@@ -219,22 +274,26 @@ def _cmd_sessions_destroy(req: V1RequestBase) -> V1ResponseBase:
     })
 
 
+def get_session(req):
+    session_id = req.session
+    ttl = timedelta(minutes=req.session_ttl_minutes) if req.session_ttl_minutes else None
+    session, fresh = SESSIONS_STORAGE.get(session_id, ttl)
+
+    if fresh:
+        logging.debug(f"new session created to perform the request (session_id={session_id})")
+    else:
+        logging.debug(f"existing session is used to perform the request (session_id={session_id}, "
+                      f"lifetime={str(session.lifetime())}, ttl={str(ttl)})")
+    driver = session.driver
+    return driver
+
+
 def _resolve_challenge(req: V1RequestBase, method: str) -> ChallengeResolutionT:
     timeout = req.maxTimeout / 1000
     driver = None
     try:
         if req.session:
-            session_id = req.session
-            ttl = timedelta(minutes=req.session_ttl_minutes) if req.session_ttl_minutes else None
-            session, fresh = SESSIONS_STORAGE.get(session_id, ttl)
-
-            if fresh:
-                logging.debug(f"new session created to perform the request (session_id={session_id})")
-            else:
-                logging.debug(f"existing session is used to perform the request (session_id={session_id}, "
-                              f"lifetime={str(session.lifetime())}, ttl={str(ttl)})")
-
-            driver = session.driver
+            driver = get_session(req)
         else:
             driver = utils.get_webdriver(req.proxy)
             logging.debug('New instance of webdriver has been created to perform the request')
@@ -292,11 +351,11 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
     res = ChallengeResolutionT({})
     res.status = STATUS_OK
     res.message = ""
-
+    img_data = None
     # navigate to the page
     logging.debug(f'Navigating to... {req.url}')
     if method == 'POST':
-        _post_request(req, driver)
+        img_data = _post_request(req, driver)
     else:
         driver.get(req.url)
 
@@ -308,7 +367,7 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
             driver.add_cookie(cookie)
         # reload the page
         if method == 'POST':
-            _post_request(req, driver)
+            img_data = _post_request(req, driver)
         else:
             driver.get(req.url)
 
@@ -398,35 +457,48 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
         challenge_res.response = driver.page_source
 
     res.result = challenge_res
+    res.img_data = img_data
     return res
 
 
 def _post_request(req: V1RequestBase, driver: WebDriver):
-    post_form = f'<form id="hackForm" action="{req.url}" method="POST">'
-    query_string = req.postData if req.postData[0] != '?' else req.postData[1:]
-    pairs = query_string.split('&')
-    for pair in pairs:
-        parts = pair.split('=')
-        # noinspection PyBroadException
-        try:
-            name = unquote(parts[0])
-        except Exception:
-            name = parts[0]
-        if name == 'submit':
-            continue
-        # noinspection PyBroadException
-        try:
-            value = unquote(parts[1])
-        except Exception:
-            value = parts[1]
-        post_form += f'<input type="text" name="{name}" value="{value}"><br>'
-    post_form += '</form>'
-    html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <body>
-            {post_form}
-            <script>document.getElementById('hackForm').submit();</script>
-        </body>
-        </html>"""
-    driver.get("data:text/html;charset=utf-8," + html_content)
+    if req and req.operation and req.operation in ["type", "click", "option"]:
+        selector = req.selector
+        value = req.value
+        operation = req.operation
+        logging.debug(f'{selector} {operation} {value}')
+        elem = driver.find_element(By.CSS_SELECTOR, selector)
+        if operation in ["type", "option"]:
+            elem.send_keys(value)
+        if operation == "click":
+            elem.click()
+            time.sleep(10)
+    else:
+        post_form = f'<form id="hackForm" action="{req.url}" method="POST">'
+        query_string = req.postData if req.postData[0] != '?' else req.postData[1:]
+        pairs = query_string.split('&')
+        for pair in pairs:
+            parts = pair.split('=')
+            # noinspection PyBroadException
+            try:
+                name = unquote(parts[0])
+            except Exception:
+                name = parts[0]
+            if name == 'submit':
+                continue
+            # noinspection PyBroadException
+            try:
+                value = unquote(parts[1])
+            except Exception:
+                value = parts[1]
+            post_form += f'<input type="text" name="{name}" value="{value}"><br>'
+        post_form += '</form>'
+        html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <body>
+                {post_form}
+                <script>document.getElementById('hackForm').submit();</script>
+            </body>
+            </html>"""
+        driver.get("data:text/html;charset=utf-8," + html_content)
