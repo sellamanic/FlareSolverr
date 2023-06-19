@@ -87,7 +87,7 @@ This is the recommended way for Windows users.
 
 We provide an example Systemd unit file `flaresolverr.service` as reference. You have to modify the file to suit your needs: paths, user and environment variables.
 
-## pip usage
+# Package
 ### install package
 ```bash
 pip install git+https://github.com/sellamanic/FlareSolverr.git
@@ -99,7 +99,7 @@ from utils import *
 driver = get_webdriver(proxy={"url": "IP:PORT"}, display=True)
 ```
 
-## client.py Usage
+# client.py Usage
 ```python
 # import interface
 from client import *
