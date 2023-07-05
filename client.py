@@ -73,6 +73,8 @@ class ChromeFlare(object):
 
     @property
     def page_source(self,):
+        if self._text:
+            return self._text
         return self.text
     
     def as_png(self,*args, **kwargs):
