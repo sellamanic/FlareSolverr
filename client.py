@@ -66,6 +66,8 @@ class ChromeFlare(object):
     
     @property
     def text(self,):
+        if self._text:
+            return self._text
         return self.request(operation="text")["data"]
             
 
