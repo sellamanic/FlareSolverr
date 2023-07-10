@@ -33,7 +33,7 @@ class ChromeFlare(object):
     def get_response(self, payload):
         return requests.post(self.endpoint, headers=self._headers, json=payload).json()
 
-    def request(self, url=None, rules=None, operation=None, value=None, selector=None):
+    def request(self, url=None, rules=None, operation=None, value=None, selector=None, script=None):
         cmd = 'request.post' if operation and operation in ["type", "click", "option"] else 'request.get'
         payload = self._payload(cmd=cmd)
         payload["operation"] = operation
@@ -41,6 +41,7 @@ class ChromeFlare(object):
             payload["url"] = url
         payload["value"] = value
         payload["selector"] = selector
+        payload["script"] = script
 
         print(payload)
 
@@ -97,6 +98,9 @@ class ChromeFlare(object):
     @property
     def cookies(self, ):
         return self.request('cookies')
+
+    def execute_script(self, script):
+        return self.request(operation='execute_script', script=script)
 
     def quit(self, ):
         self.request(self._payload(cmd="sessions.destroy"))
