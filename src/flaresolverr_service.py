@@ -149,7 +149,7 @@ def _controller_v1_handler(req: V1RequestBase) -> V1ResponseBase:
         logging.warning("Request parameter 'userAgent' was removed in FlareSolverr v2.")
 
     operation = req.operation
-    if operation and operation in ["text", "current_url", "cookies", "as_png", "element_as_png"]:
+    if operation and operation in ["text", "current_url", "cookies", "as_png", "element_as_png", "execute_script"]:
         driver = get_session(req)
         if operation == "text":
             return perform_operation(driver.page_source)
@@ -161,6 +161,9 @@ def _controller_v1_handler(req: V1RequestBase) -> V1ResponseBase:
             logging.debug("inside as_png")
             img = driver.get_screenshot_as_png()
             return perform_operation(base64.b64encode(img).decode("utf-8"))
+        elif operation == "execute_script":
+            driver.execute_script(req.script)
+            return perform_operation(driver.page_source)
         elif operation == "element_as_png":
             selector = req.selector
             logging.debug(f"inside element_as_png {selector}")
