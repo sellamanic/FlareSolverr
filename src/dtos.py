@@ -43,6 +43,8 @@ class V1RequestBase(object):
     value: str = None
     operation: str = None
 
+    script: str = None
+
     # V1Request
     url: str = None
     postData: str = None
