@@ -88,6 +88,16 @@ def get_webdriver(proxy: dict = None, display=False) -> WebDriver:
     # detect chrome path
     browser_executable_path = get_chrome_exe_path()
 
+    # its for disabling auto downloading
+    logging.info("disabled auto download")
+
+    prefs = {
+        'profile.default_content_setting_values.notifications': 2,
+        'download.prompt_for_download': False,
+        'download_restrictions': 3,
+    }
+    options.add_experimental_option('prefs', prefs)
+
     # downloads and patches the chromedriver
     # if we don't set driver_executable_path it downloads, patches, and deletes the driver each time
     driver = uc.Chrome(options=options, browser_executable_path=browser_executable_path,
