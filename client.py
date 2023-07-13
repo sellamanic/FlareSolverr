@@ -103,7 +103,7 @@ class ChromeFlare(object):
         return self.request(operation='execute_script', script=script)
 
     def quit(self, ):
-        self.request(self._payload(cmd="sessions.destroy"))
+        self.get_response(self._payload(cmd="sessions.destroy"))
 
     def close(self, ):
-        self.request(self._payload(cmd="sessions.destroy"))
+        self.quit()
