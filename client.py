@@ -6,8 +6,8 @@ import base64
 class ChromeFlare(object):
     endpoint = 'http://localhost:8191/v1'
 
-    def __init__(self, session=None, timeout=60000, proxy=None):
-        self.timeout = timeout
+    def __init__(self, session=None, timeout=70, proxy=None):
+        self.timeout = timeout*1000
         self.session = session
         self.proxy = proxy
         self.create_session(session)
@@ -53,12 +53,12 @@ class ChromeFlare(object):
         if session_id:
             response = self.get_response(self._payload(cmd="sessions.create"))
 
-    def get(self, url, params: dict = {}):
+    def get(self, url, params: dict = {}, operation=None):
         if params:
             query_string = "&".join([f"{key}={value}" for key, value in params.items()])
             url = f"{url}?{query_string}"
 
-        info = self.request(url=url)
+        info = self.request(url=url, operation=operation)
 
         self._text = info.get("solution", {}).get("response")
         return self
