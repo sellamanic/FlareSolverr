@@ -350,6 +350,18 @@ def click_verify(driver: WebDriver):
     time.sleep(2)
 
 
+def launch_url(driver, req):
+    operation = req.operation
+    if operation == "new_tab":
+        logging.info(f"{operation} -> operation method")
+        driver.execute_script(f'''window.open("{req.url}", "_blank");''')
+        time.sleep(40)
+        driver.close()
+        driver.switch_to.window(driver.window_handles[-1])
+    else:
+        driver.get(req.url)
+
+
 def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> ChallengeResolutionT:
     res = ChallengeResolutionT({})
     res.status = STATUS_OK
@@ -360,7 +372,7 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
     if method == 'POST':
         img_data = _post_request(req, driver)
     else:
-        driver.get(req.url)
+        launch_url(driver, req)
 
     # set cookies if required
     if req.cookies is not None and len(req.cookies) > 0:
@@ -372,7 +384,8 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
         if method == 'POST':
             img_data = _post_request(req, driver)
         else:
-            driver.get(req.url)
+            launch_url(driver, req)
+
 
     # wait for the page
     if utils.get_config_log_html():
