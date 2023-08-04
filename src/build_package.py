@@ -25,8 +25,8 @@ def clean_files():
 
 def download_chromium():
     # https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Linux_x64/
-    revision = "1090006" if os.name == 'nt' else '1090007'
-    arch = 'Win' if os.name == 'nt' else 'Linux_x64'
+    revision = "1140001" if os.name == 'nt' else '1140000'
+    arch = 'Win_x64' if os.name == 'nt' else 'Linux_x64'
     dl_file = 'chrome-win' if os.name == 'nt' else 'chrome-linux'
     dl_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, 'dist_chrome')
     dl_path_folder = os.path.join(dl_path, dl_file)
@@ -68,12 +68,15 @@ def download_chromium():
 
 def run_pyinstaller():
     sep = ';' if os.name == 'nt' else ':'
-    subprocess.check_call([sys.executable, "-m", "PyInstaller",
-                           "--icon", "resources/flaresolverr_logo.ico",
-                           "--add-data", f"package.json{sep}.",
-                           "--add-data", f"{os.path.join('dist_chrome', 'chrome')}{sep}chrome",
-                           os.path.join("src", "flaresolverr.py")],
-                          cwd=os.pardir)
+    result = subprocess.run([sys.executable, "-m", "PyInstaller",
+                             "--icon", "resources/flaresolverr_logo.ico",
+                             "--add-data", f"package.json{sep}.",
+                             "--add-data", f"{os.path.join('dist_chrome', 'chrome')}{sep}chrome",
+                             os.path.join("src", "flaresolverr.py")],
+                            cwd=os.pardir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode != 0:
+        print(result.stderr.decode('utf-8'))
+        raise Exception("Error running pyInstaller")
 
 
 def compress_package():

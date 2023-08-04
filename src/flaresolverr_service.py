@@ -70,7 +70,7 @@ CHALLENGE_SELECTORS = [
     # Fairlane / pararius.com
     'div.vc div.text-box h2'
 ]
-SHORT_TIMEOUT = 10
+SHORT_TIMEOUT = 1
 SESSIONS_STORAGE = SessionsStorage()
 
 
@@ -313,7 +313,7 @@ def _resolve_challenge(req: V1RequestBase, method: str) -> ChallengeResolutionT:
 
 def click_verify(driver: WebDriver):
     try:
-        logging.debug("Try to find the Cloudflare verify checkbox")
+        logging.debug("Try to find the Cloudflare verify checkbox...")
         iframe = driver.find_element(By.XPATH, "//iframe[@title='Widget containing a Cloudflare security challenge']")
         driver.switch_to.frame(iframe)
         checkbox = driver.find_element(
@@ -325,14 +325,14 @@ def click_verify(driver: WebDriver):
             actions.move_to_element_with_offset(checkbox, 5, 7)
             actions.click(checkbox)
             actions.perform()
-            logging.debug("Cloudflare verify checkbox found and clicked")
+            logging.debug("Cloudflare verify checkbox found and clicked!")
     except Exception:
-        logging.debug("Cloudflare verify checkbox not found on the page")
+        logging.debug("Cloudflare verify checkbox not found on the page.")
     finally:
         driver.switch_to.default_content()
 
     try:
-        logging.debug("Try to find the Cloudflare 'Verify you are human' button")
+        logging.debug("Try to find the Cloudflare 'Verify you are human' button...")
         button = driver.find_element(
             by=By.XPATH,
             value="//input[@type='button' and @value='Verify you are human']",
@@ -342,10 +342,9 @@ def click_verify(driver: WebDriver):
             actions.move_to_element_with_offset(button, 5, 7)
             actions.click(button)
             actions.perform()
-            logging.debug("The Cloudflare 'Verify you are human' button found and clicked")
-    except Exception as e:
-        logging.debug("The Cloudflare 'Verify you are human' button not found on the page")
-        # print(e)
+            logging.debug("The Cloudflare 'Verify you are human' button found and clicked!")
+    except Exception:
+        logging.debug("The Cloudflare 'Verify you are human' button not found on the page.")
 
     time.sleep(2)
 
@@ -373,6 +372,7 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
         img_data = _post_request(req, driver)
     else:
         launch_url(driver, req)
+        driver.start_session()
 
     # set cookies if required
     if req.cookies is not None and len(req.cookies) > 0:
@@ -385,7 +385,7 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
             img_data = _post_request(req, driver)
         else:
             launch_url(driver, req)
-
+            driver.start_session()  # required to bypass Cloudflare
 
     # wait for the page
     if utils.get_config_log_html():
@@ -518,3 +518,4 @@ def _post_request(req: V1RequestBase, driver: WebDriver):
             </body>
             </html>"""
         driver.get("data:text/html;charset=utf-8," + html_content)
+        driver.start_session()  # required to bypass Cloudflare

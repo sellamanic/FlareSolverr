@@ -3,6 +3,8 @@ import logging
 import os
 import re
 import shutil
+import urllib.parse
+import tempfile
 
 from selenium.webdriver.chrome.webdriver import WebDriver
 import undetected_chromedriver as uc
@@ -36,9 +38,83 @@ def get_flaresolverr_version() -> str:
         return FLARESOLVERR_VERSION
 
 
+def create_proxy_extension(proxy: dict) -> str:
+    parsed_url = urllib.parse.urlparse(proxy['url'])
+    scheme = parsed_url.scheme
+    host = parsed_url.hostname
+    port = parsed_url.port
+    username = proxy['username']
+    password = proxy['password']
+    manifest_json = """
+    {
+        "version": "1.0.0",
+        "manifest_version": 2,
+        "name": "Chrome Proxy",
+        "permissions": [
+            "proxy",
+            "tabs",
+            "unlimitedStorage",
+            "storage",
+            "<all_urls>",
+            "webRequest",
+            "webRequestBlocking"
+        ],
+        "background": {"scripts": ["background.js"]},
+        "minimum_chrome_version": "76.0.0"
+    }
+    """
+
+    background_js = """
+    var config = {
+        mode: "fixed_servers",
+        rules: {
+            singleProxy: {
+                scheme: "%s",
+                host: "%s",
+                port: %d
+            },
+            bypassList: ["localhost"]
+        }
+    };
+
+    chrome.proxy.settings.set({value: config, scope: "regular"}, function() {});
+
+    function callbackFn(details) {
+        return {
+            authCredentials: {
+                username: "%s",
+                password: "%s"
+            }
+        };
+    }
+
+    chrome.webRequest.onAuthRequired.addListener(
+        callbackFn,
+        { urls: ["<all_urls>"] },
+        ['blocking']
+    );
+    """ % (
+        scheme,
+        host,
+        port,
+        username,
+        password
+    )
+
+    proxy_extension_dir = tempfile.mkdtemp()
+
+    with open(os.path.join(proxy_extension_dir, "manifest.json"), "w") as f:
+        f.write(manifest_json)
+
+    with open(os.path.join(proxy_extension_dir, "background.js"), "w") as f:
+        f.write(background_js)
+
+    return proxy_extension_dir
+
+
 def get_webdriver(proxy: dict = None, display=False) -> WebDriver:
-    global PATCHED_DRIVER_PATH
     logging.debug('Launching web browser...')
+    global PATCHED_DRIVER_PATH
 
     # undetected_chromedriver
     options = uc.ChromeOptions()
@@ -59,12 +135,12 @@ def get_webdriver(proxy: dict = None, display=False) -> WebDriver:
     # https://github.com/microsoft/vscode/issues/127800#issuecomment-873342069
     # https://peter.sh/experiments/chromium-command-line-switches/#use-gl
     options.add_argument('--use-gl=swiftshader')
-    # workaround for updated 'verify your are human' check
-    # https://github.com/FlareSolverr/FlareSolverr/issues/811
-    options.add_argument('--auto-open-devtools-for-tabs')
-    options.add_argument('--headless=true')
 
-    if proxy and 'url' in proxy:
+    proxy_extension_dir = None
+    if proxy and all(key in proxy for key in ['url', 'username', 'password']):
+        proxy_extension_dir = create_proxy_extension(proxy)
+        options.add_argument("--load-extension=%s" % os.path.abspath(proxy_extension_dir))
+    elif proxy and 'url' in proxy:
         proxy_url = proxy['url']
         logging.debug("Using webdriver proxy: %s", proxy_url)
         options.add_argument('--proxy-server=%s' % proxy_url)
@@ -86,6 +162,10 @@ def get_webdriver(proxy: dict = None, display=False) -> WebDriver:
         driver_exe_path = "/app/chromedriver"
     else:
         version_main = get_chrome_major_version()
+        # Fix for Chrome 115
+        # https://github.com/seleniumbase/SeleniumBase/pull/1967
+        if int(version_main) > 114:
+            version_main = 114
         if PATCHED_DRIVER_PATH is not None:
             driver_exe_path = PATCHED_DRIVER_PATH
 
@@ -105,19 +185,18 @@ def get_webdriver(proxy: dict = None, display=False) -> WebDriver:
     # downloads and patches the chromedriver
     # if we don't set driver_executable_path it downloads, patches, and deletes the driver each time
     driver = uc.Chrome(options=options, browser_executable_path=browser_executable_path,
-                       driver_executable_path=driver_exe_path, version_main=version_main)
+                       driver_executable_path=driver_exe_path, version_main=version_main,
+                       windows_headless=windows_headless, headless=windows_headless)
 
     # save the patched driver to avoid re-downloads
     if driver_exe_path is None:
         PATCHED_DRIVER_PATH = os.path.join(driver.patcher.data_path, driver.patcher.exe_name)
-        shutil.copy(driver.patcher.executable_path, PATCHED_DRIVER_PATH)
-        
-    # workaround for updated 'verify your are human' check
-    # https://github.com/FlareSolverr/FlareSolverr/issues/811
-    driver.execute_script('''window.open("","_blank");''')
-    driver.switch_to.window(window_name=driver.window_handles[0])
-    driver.close()
-    driver.switch_to.window(window_name=driver.window_handles[0])
+        if PATCHED_DRIVER_PATH != driver.patcher.executable_path:
+            shutil.copy(driver.patcher.executable_path, PATCHED_DRIVER_PATH)
+
+    # clean up proxy extension directory
+    if proxy_extension_dir is not None:
+        shutil.rmtree(proxy_extension_dir)
 
     # selenium vanilla
     # options = webdriver.ChromeOptions()

@@ -1,8 +1,34 @@
 # Changelog
 
+## v3.3.2 (2023/08/03)
+
+* Fix URL domain in Prometheus exporter
+
+## v3.3.1 (2023/08/03)
+
+* Fix for Cloudflare verify checkbox
+* Fix HEADLESS=false in Windows binary
+* Fix Prometheus exporter for management and health endpoints
+* Remove misleading stack trace when the verify checkbox is not found
+* Revert "Update base Docker image to Debian Bookworm" #849
+* Revert "Install Chromium 115 from Debian testing" #849
+
+## v3.3.0 (2023/08/02)
+
+* Fix for new Cloudflare detection. Thanks @cedric-bour for #845
+* Add support for proxy authentication username/password. Thanks @jacobprice808	for #807
+* Implement Prometheus metrics
+* Fix Chromium Driver for Chrome / Chromium version > 114
+* Use Chromium 115 in binary packages (Windows and Linux)
+* Install Chromium 115 from Debian testing (Docker)
+* Update base Docker image to Debian Bookworm
+* Update Selenium 4.11.2
+* Update pyinstaller 5.13.0
+* Add more traces in build_package.py
+
 ## v3.2.2 (2023/07/16)
 
-* Workaround for updated 'verify your are human' check
+* Workaround for updated 'verify you are human' check
 
 ## v3.2.1 (2023/06/10)
 
