@@ -36,7 +36,7 @@ setup(
     version=version,
     packages=["undetected_chromedriver"],
     install_requires=deps,
-    py_modules=['utils'],
+    py_modules=['flare'],
     url="https://github.com/sellamanic/FlareSolverr",
     license="GPL-3.0",
     author="xkjjdsasuw",
