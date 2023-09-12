@@ -31,12 +31,13 @@ description = (
     "Selenium.webdriver.Chrome replacement with compatiblity for Brave, and other Chromium based browsers.",
 )
 
+
 setup(
     name="undetected-chromedriver",
     version=version,
     packages=["undetected_chromedriver"],
     install_requires=deps,
-    py_modules=['utils'],
+    py_modules=['utils', "flaresolverr_service", "dtos", "sessions"],
     url="https://github.com/sellamanic/FlareSolverr",
     license="GPL-3.0",
     author="xkjjdsasuw",

@@ -44,6 +44,7 @@ class V1RequestBase(object):
     operation: str = None
 
     script: str = None
+    is_package: bool = False
 
     # V1Request
     url: str = None
