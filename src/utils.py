@@ -112,7 +112,7 @@ def create_proxy_extension(proxy: dict) -> str:
     return proxy_extension_dir
 
 
-def get_webdriver(proxy: dict = None, display=False) -> WebDriver:
+def get_webdriver(proxy: dict = None, display=False, chrome=None) -> WebDriver:
     logging.debug('Launching web browser...')
     global PATCHED_DRIVER_PATH
 
@@ -184,7 +184,8 @@ def get_webdriver(proxy: dict = None, display=False) -> WebDriver:
 
     # downloads and patches the chromedriver
     # if we don't set driver_executable_path it downloads, patches, and deletes the driver each time
-    driver = uc.Chrome(options=options, browser_executable_path=browser_executable_path,
+    Chrome = chrome if chrome else uc.Chrome
+    driver = Chrome(options=options, browser_executable_path=browser_executable_path,
                        driver_executable_path=driver_exe_path, version_main=version_main,
                        windows_headless=windows_headless, headless=windows_headless)
 
