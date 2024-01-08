@@ -368,6 +368,8 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
     img_data = None
     # navigate to the page
     logging.debug(f'Navigating to... {req.url}')
+    driver.get(req.url)
+    driver.start_session() # required to bypass Cloudflare
     if method == 'POST':
         img_data = _post_request(req, driver)
     else:
