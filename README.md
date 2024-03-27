@@ -83,6 +83,13 @@ This is the recommended way for Windows users.
 * Run `pip install -r requirements.txt` command to install FlareSolverr dependencies.
 * Run `python src/flaresolverr.py` command to start FlareSolverr.
 
+### From source code (FreeBSD/TrueNAS CORE)
+
+* Run `pkg install chromium python39 py39-pip xorg-vfbserver` command to install the required dependencies.
+* Clone this repository and open a shell in that path.
+* Run `python3.9 -m pip install -r requirements.txt` command to install FlareSolverr dependencies.
+* Run `python3.9 src/flaresolverr.py` command to start FlareSolverr.
+
 ### Systemd service
 
 We provide an example Systemd unit file `flaresolverr.service` as reference. You have to modify the file to suit your needs: paths, user and environment variables.
@@ -133,7 +140,7 @@ curl -L -X POST 'http://localhost:8191/v1' \
 -H 'Content-Type: application/json' \
 --data-raw '{
   "cmd": "request.get",
-  "url":"http://www.google.com/",
+  "url": "http://www.google.com/",
   "maxTimeout": 60000
 }'
 ```
@@ -307,8 +314,8 @@ This is the same as `request.get` but it takes one more param:
 
 Environment variables are set differently depending on the operating system. Some examples:
 * Docker: Take a look at the Docker section in this document. Environment variables can be set in the `docker-compose.yml` file or in the Docker CLI command.
-* Linux: Run `export LOG_LEVEL=debug` and then start FlareSolverr in the same shell.
-* Windows: Open `cmd.exe`, run `set LOG_LEVEL=debug` and then start FlareSolverr in the same shell.
+* Linux: Run `export LOG_LEVEL=debug` and then run `flaresolverr` in the same shell.
+* Windows: Open `cmd.exe`, run `set LOG_LEVEL=debug` and then run `flaresolverr.exe` in the same shell.
 
 ## Prometheus exporter
 
