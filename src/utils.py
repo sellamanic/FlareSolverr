@@ -193,9 +193,10 @@ def get_webdriver(proxy: dict = None, display=False, chrome=None) -> WebDriver:
 
     # downloads and patches the chromedriver
     # if we don't set driver_executable_path it downloads, patches, and deletes the driver each time
+    Chrome = chrome if chrome else uc.Chrome
 
     try:
-        driver = uc.Chrome(options=options, browser_executable_path=browser_executable_path,
+        driver = Chrome(options=options, browser_executable_path=browser_executable_path,
                            driver_executable_path=driver_exe_path, version_main=version_main,
                            windows_headless=windows_headless, headless=windows_headless)
     except Exception as e:
