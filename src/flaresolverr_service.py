@@ -175,7 +175,7 @@ def _controller_v1_handler(req: V1RequestBase) -> V1ResponseBase:
             return perform_operation(img_data_base64)
 
     # set default values
-    if req.maxTimeout is None or req.maxTimeout < 1:
+    if req.maxTimeout is None or int(req.maxTimeout) < 1:
         req.maxTimeout = 60000
 
     # execute the command
@@ -292,7 +292,7 @@ def get_session(req):
 
 
 def _resolve_challenge(req: V1RequestBase, method: str) -> ChallengeResolutionT:
-    timeout = req.maxTimeout / 1000
+    timeout = int(req.maxTimeout) / 1000
     driver = None
     try:
         if req.session:
