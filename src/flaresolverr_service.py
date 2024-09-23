@@ -3,7 +3,8 @@ import platform
 import sys
 import time
 from datetime import timedelta
-from urllib.parse import unquote
+from html import escape
+from urllib.parse import unquote, quote
 
 from func_timeout import FunctionTimedOut, func_timeout
 from selenium.common import TimeoutException
@@ -64,7 +65,7 @@ CHALLENGE_TITLES = [
 ]
 CHALLENGE_SELECTORS = [
     # Cloudflare
-    '#cf-challenge-running', '.ray_id', '.attack-box', '#cf-please-wait', '#challenge-spinner', '#trk_jschal_js',
+    '#cf-challenge-running', '.ray_id', '.attack-box', '#cf-please-wait', '#challenge-spinner', '#trk_jschal_js', '#turnstile-wrapper', '.lds-ring',
     # Custom CloudFlare for EbookParadijs, Film-Paleis, MuziekFabriek and Puur-Hollands
     'td.info #js_info',
     # Fairlane / pararius.com
@@ -320,7 +321,7 @@ def click_verify(driver: WebDriver):
         driver.switch_to.frame(iframe)
         checkbox = driver.find_element(
             by=By.XPATH,
-            value='//*[@id="challenge-stage"]/div/label/input',
+            value='//*[@id="content"]/div/div/label/input',
         )
         if checkbox:
             actions = ActionChains(driver)
@@ -486,7 +487,6 @@ def _evil_logic(req: V1RequestBase, driver: WebDriver, method: str) -> Challenge
 
 
 def _post_request(req: V1RequestBase, driver: WebDriver):
-
     if req and req.operation and req.operation in ["type", "click", "option"]:
         selector = req.selector
         value = req.value
